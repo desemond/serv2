@@ -47,53 +47,46 @@ public class WebSocketServerMiddleware
     public async Task InvokeAsync(HttpContext context)
     {
         WriteRequestParam(context);
-        if(context.WebSockets.IsWebSocketRequest)
+
+        if (context.WebSockets.IsWebSocketRequest)
         {
             WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync();
             string connId = _manager.AddSocket(webSocket);
-            //await SocketExtensions.SendTextMessageAsync(webSocket, "first run");
-            string jsonString = File.ReadAllText("Clients.json");
-            List<ClientLevel> clients = new List<ClientLevel>();
-            ClientLevel clientLevel = new ClientLevel();
-            clientLevel = JsonSerializer.Deserialize<ClientLevel>(jsonString);
-            //Console.WriteLine(clients);
-            var port = context.Connection.LocalPort;
+
+            // Определение типа клиента на основе порта
+            int port = context.Connection.LocalPort;
+            //int clientType = (port == 5000) ? 1 : 2; // Например: порт 5000 для Type 1, другой для Type 2
+            
             if (!File.Exists("Clients.json"))
             {
-                await SocketExtensions.SendTextMessageAsync(webSocket, "first run");
-            }
-            else
-            {
-                    await SocketExtensions.SendTextMessageAsync(webSocket, "first run");
+                File.WriteAllText("Clients.json", "[]");
             }
 
-
-            //await SendConnIdAsync(webSocket, connId);
-            await RecieveMessage(webSocket, async (result, buffer) => 
+            await RecieveMessage(webSocket, async (result, buffer) =>
             {
-                if(result.MessageType == WebSocketMessageType.Text)
+                if (result.MessageType == WebSocketMessageType.Text)
                 {
                     string message = Encoding.UTF8.GetString(buffer, 0, result.Count);
-                    await RouteJsonMessageAsync(message, connId,webSocket);
+                    await RouteJsonMessageAsync(message, connId, webSocket, port);
                     return;
                 }
-                else if(result.MessageType == WebSocketMessageType.Close
-                        && result.CloseStatus != null
-                        && _manager.TryRemoveSocket(connId, out WebSocket? removedSocket))
+                else if (result.MessageType == WebSocketMessageType.Close
+                         && result.CloseStatus != null
+                         && _manager.TryRemoveSocket(connId, out WebSocket? removedSocket))
                 {
-                    Console.WriteLine("Recieved Close message");
+                    Console.WriteLine("Received Close message");
                     await removedSocket.CloseAsync(
                         result.CloseStatus.Value,
                         result.CloseStatusDescription,
-                    CancellationToken.None);
+                        CancellationToken.None);
                     return;
                 }
             });
         }
-        else 
-        {        
+        else
+        {
             Console.WriteLine("Hello from 2nd request delegate!");
-            await _next(context);   
+            await _next(context);
         }
     }
 
@@ -140,30 +133,50 @@ public class WebSocketServerMiddleware
             await webSocket.SendAsync(new ArraySegment<byte>(buffer), WebSocketMessageType.Text, true, CancellationToken.None);
         }
     }
-    public async Task RouteJsonMessageAsync(string messageInput,string connId, WebSocket socket)
+    public async Task RouteJsonMessageAsync(string messageInput, string connId, WebSocket socket, int port)
     {
-        List<string> paths= new List<string>();
+        List<string> paths = new List<string>();
         List<ClientLevel> clients = new List<ClientLevel>();
-        var client = JsonSerializer.Deserialize<ClientLevel>(messageInput)!;
-        if (!File.Exists("Clients.json"))
+
+        // Чтение файла clients.json
+        if (File.Exists("Clients.json"))
         {
+            string jsonContent = File.ReadAllText("Clients.json");
+            clients = JsonSerializer.Deserialize<List<ClientLevel>>(jsonContent) ?? new List<ClientLevel>();
+        }
+
+        // Десериализация сообщения от клиента
+        var client = JsonSerializer.Deserialize<ClientLevel>(messageInput)!;
+
+        // Проверка, существует ли клиент
+        var existingClient = clients.Find(c => c.ClientName == client.ClientName);
+
+        if (existingClient == null)
+        {
+            // Новый клиент — добавляем его в список
             clients.Add(client);
-            File.WriteAllText( "Clients.json", JsonSerializer.Serialize(client));
+            File.WriteAllText("Clients.json", JsonSerializer.Serialize(clients));
         }
         else
         {
-            
+            // Обновление данных существующего клиента
+            existingClient.Days = client.Days;
+            File.WriteAllText("Clients.json", JsonSerializer.Serialize(clients));
         }
-        if (!File.Exists(connId + "_paths.json"))
-        {
-            foreach (var data in client.Days[^1].Data)
-            {
-                paths.Add(data.Path);
 
-            }
-            File.WriteAllText(connId+ "paths.json", JsonSerializer.Serialize(paths));
-            await SendPathsToClient(socket, paths);
-        } 
+        // Создание файла paths для текущего клиента
+        //if (!File.Exists(connId + "_paths.json"))
+        //{
+        //    foreach (var data in client.Days[^1].Data)
+        //    {
+        //        paths.Add(data.Path);
+        //    }
+        //    File.WriteAllText(connId + "_paths.json", JsonSerializer.Serialize(paths));
+        //    await SendPathsToClient(socket, paths);
+        //}
+
+        // Обработка типов клиентов
+        //await HandleClientMessage(clientType, socket);
     }
 }
 //serialize list client day
