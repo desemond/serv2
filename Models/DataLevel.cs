@@ -12,6 +12,14 @@ namespace Server.Models
         public List<DateTime> CheckTime { get; set; }
         public List<DateTime> LastWriteTime { get; set; }
         public Dictionary<string, object> RegistryValues { get; set; }
+        public DataLevel()
+        {
+            Size = new List<string>();
+            Status = new List<bool>();
+            CheckTime = new List<DateTime>();
+            LastWriteTime = new List<DateTime>();
+            RegistryValues = new Dictionary<string, object>();
+        }
 
         public DataLevel(string path)
         {

@@ -5,7 +5,7 @@ using System.Text.Json;
 using WebSocketServer.Models;
 using Server.Models;
 using Microsoft.AspNetCore.Http;
-//using Newtonsoft.Json;
+
 
 namespace WebSocketServer.Middleware;
 
@@ -49,26 +49,22 @@ public class WebSocketServerMiddleware
         WriteRequestParam(context);
         if(context.WebSockets.IsWebSocketRequest)
         {
-            var clientIp = context.Connection.RemoteIpAddress?.ToString();
-            Console.WriteLine($"Client IP Address: {clientIp}");
             WebSocket webSocket = await context.WebSockets.AcceptWebSocketAsync();
-            Console.WriteLine("WebSocket Connected"); 
             string connId = _manager.AddSocket(webSocket);
+            //await SocketExtensions.SendTextMessageAsync(webSocket, "first run");
+            string jsonString = File.ReadAllText("Clients.json");
+            List<ClientLevel> clients = new List<ClientLevel>();
+            ClientLevel clientLevel = new ClientLevel();
+            clientLevel = JsonSerializer.Deserialize<ClientLevel>(jsonString);
+            //Console.WriteLine(clients);
+            var port = context.Connection.LocalPort;
             if (!File.Exists("Clients.json"))
             {
                 await SocketExtensions.SendTextMessageAsync(webSocket, "first run");
             }
             else
             {
-                string jsonString = File.ReadAllText("Clients.json");
-                List<ClientLevel>  clients = new List<ClientLevel>();
-                clients = JsonSerializer.Deserialize <List<ClientLevel>>(jsonString);
-                var port = context.Connection.LocalPort;
-                Console.WriteLine(port);
-                if (port == 5000)
-                {
                     await SocketExtensions.SendTextMessageAsync(webSocket, "first run");
-                }
             }
 
 
@@ -77,9 +73,7 @@ public class WebSocketServerMiddleware
             {
                 if(result.MessageType == WebSocketMessageType.Text)
                 {
-                    Console.WriteLine("Message recieved");
                     string message = Encoding.UTF8.GetString(buffer, 0, result.Count);
-                    Console.WriteLine($"Message: {message}");
                     await RouteJsonMessageAsync(message, connId,webSocket);
                     return;
                 }
@@ -172,3 +166,4 @@ public class WebSocketServerMiddleware
         } 
     }
 }
+//serialize list client day

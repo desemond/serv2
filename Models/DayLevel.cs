@@ -4,7 +4,10 @@
     {
         public DateOnly Day { get; set; }
         public List<DataLevel> Data { get; set; }
-
+        public DayLevel()
+        {
+            List<DataLevel> Data = new List<DataLevel>();
+        }
         public DayLevel(List<DataLevel> data)
         {
             this.Day = DateOnly.FromDateTime(DateTime.Now);
