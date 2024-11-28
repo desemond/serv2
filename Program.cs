@@ -1,19 +1,16 @@
-using System.Net.WebSockets;
-using WebSocketServer.Middleware;
+using Microsoft.AspNetCore.WebSockets;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.Services.AddSingleton<WebSocketConnectionManager>();
+
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.ListenAnyIP(5000); // Порт для клиентов типа 1
+    options.ListenAnyIP(6000); // Порт для клиентов типа 2
+});
+
 var app = builder.Build();
 
 app.UseWebSockets();
-app.UseWebSocketServer();
-
-// app.MapGet("/", () => "Hello World!");
-
-app.Run(async context => 
-{
-    Console.WriteLine("Hello from 3rd request delegate!");
-    await context.Response.WriteAsync("Response! Hello from 3rd request delegate!");
-});
+app.UseMiddleware<WebSocketMiddleware>();
 
 app.Run();
