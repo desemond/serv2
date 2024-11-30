@@ -35,60 +35,56 @@ namespace Server.Models
 
         public void UpdateFrom(DataLevel other)
         {
-            // Добавляем новое время проверки
+            // Добавляем время проверки
             CheckTime.Add(DateTime.Now);
+
+            // Флаг текущего статуса
+            bool currentStatus = true;
 
             // Сравниваем размер
             if (Size.Count > 0 && other.Size.Count > 0 && Size[^1] == other.Size[^1])
             {
-                Status.Add(true);
+                currentStatus = true;
             }
             else
             {
                 if (other.Size.Count > 0)
                     Size.Add(other.Size[^1]);
-                Status.Add(false);
+                currentStatus = false;
             }
 
             // Сравниваем время последнего изменения
             if (LastWriteTime.Count > 0 && other.LastWriteTime.Count > 0 && LastWriteTime[^1] == other.LastWriteTime[^1])
             {
-                Status[^1] = Status[^1] && true;
+                currentStatus = currentStatus && true;
             }
             else
             {
                 if (other.LastWriteTime.Count > 0)
                     LastWriteTime.Add(other.LastWriteTime[^1]);
-                Status[^1] = false;
+                currentStatus = false;
             }
 
             // Сравниваем значения в реестре
             if (RegistryValues.Count == other.RegistryValues.Count)
             {
-                bool registryMatch = true;
                 foreach (var kvp in RegistryValues)
                 {
                     if (!other.RegistryValues.TryGetValue(kvp.Key, out var otherValue) || !Equals(kvp.Value, otherValue))
                     {
-                        registryMatch = false;
+                        currentStatus = false;
                         break;
                     }
-                }
-                if (registryMatch)
-                {
-                    Status[^1] = Status[^1] && true;
-                }
-                else
-                {
-                    RegistryValues = new Dictionary<string, object>(other.RegistryValues);
-                    Status[^1] = false;
                 }
             }
             else
             {
                 RegistryValues = new Dictionary<string, object>(other.RegistryValues);
-                Status[^1] = false;
+                currentStatus = false;
             }
+
+            // Обновляем статус
+            Status.Add(currentStatus);
         }
     }
 

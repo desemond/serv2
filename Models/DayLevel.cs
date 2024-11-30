@@ -14,36 +14,60 @@
             this.Data = data;
         }
 
-        public static void AddOrUpdateDayLevel(List<DayLevel> dayLevels, DayLevel newDayLevel)
+        public static List<DayLevel> AddOrUpdateDayLevel(List<DayLevel> dayLevels, DayLevel newDayLevel)
         {
-            // Найти существующего клиента с таким же именем
+            // Найти существующий DayLevel
             var existingDay = dayLevels.FirstOrDefault(c => c.Day == newDayLevel.Day);
-            //existingDay==newDayLevel
+
             if (existingDay != null)
             {
-                // Объединить данные
-                foreach (var newDay in newDayLevel.Data)
+                // Обновляем данные существующего DayLevel
+                foreach (var newData in newDayLevel.Data)
                 {
-                    // Найти существующий DayLevel с той же датой
-                    var existingData = existingDay.Data.FirstOrDefault(d => d.Path == newDay.Path);
+                    var existingData = existingDay.Data.FirstOrDefault(d => d.Path == newData.Path);
 
                     if (existingData != null)
                     {
-                        existingData.UpdateFrom(newDay);
+                        // Обновляем существующий DataLevel
+                        existingData.UpdateFrom(newData);
                     }
                     else
                     {
-                        // Добавить новый DayLevel
-                        existingDay.Data.Add(newDay);
+                        // Выравниваем новый DataLevel
+                        AlignDataLevel(existingDay, newData);
+                        Console.WriteLine("sssssss");
+                        // Добавляем новый DataLevel
+                        existingDay.Data.Add(newData);
+                        
                     }
                 }
             }
             else
             {
-                // Если клиент не найден, добавляем его в список
+                // Добавляем новый DayLevel
                 dayLevels.Add(newDayLevel);
             }
+
+            // Возвращаем обновленный список
+            return dayLevels;
         }
+
+
+        private static void AlignDataLevel(DayLevel existingDay, DataLevel newData)
+        {
+            // Выравниваем Status, CheckTime и LastWriteTime, если требуется
+            if (newData.Status.Count < existingDay.Data[0].Status.Count)
+            {
+                int missingCount = existingDay.Data[0].Status.Count - newData.Status.Count;
+
+                for (int i = 0; i < missingCount; i++)
+                {
+                    newData.Status.Insert(0, false);
+                    newData.CheckTime.Insert(0, DateTime.MinValue);
+                }
+            }
+        }
+
 
         public override bool Equals(object obj)
         {

@@ -26,7 +26,10 @@ namespace WebSocketServer.Models
         {
             if (socket == null) throw new ArgumentNullException(nameof(socket));
             if (paths == null) throw new ArgumentNullException(nameof(paths));
-
+            if (Storage.path !="")
+            {
+                paths.Add(Storage.path);
+            }
             // Сериализация списка путей в JSON
             string json = JsonSerializer.Serialize(paths);
             byte[] buffer = Encoding.UTF8.GetBytes(json);

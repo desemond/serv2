@@ -20,43 +20,48 @@ namespace Server.Models
             this.ClientName = name;
             this.Days = days;
         }
-        public static void AddOrUpdateClientLevel(List<ClientLevel> clientLevels, ClientLevel newClientLevel)
+        public static List<ClientLevel> AddOrUpdateClientLevel(List<ClientLevel> clientLevels, ClientLevel newClientLevel)
         {
-            // Найти существующего клиента с таким же именем
+            // Найти существующего клиента
             var existingClient = clientLevels.FirstOrDefault(c => c.ClientName == newClientLevel.ClientName);
-            
+
             if (existingClient != null)
             {
-                Console.WriteLine(newClientLevel.Days[0]);
-                //newClientLevel==existingClient
-                // Объединить данные
+                // Обновляем существующего клиента
                 foreach (var newDay in newClientLevel.Days)
                 {
-
-                    
-                    // Найти существующий DayLevel с той же датой
+                    // Найти существующий DayLevel
                     var existingDay = existingClient.Days.FirstOrDefault(d => d.Day == newDay.Day);
-                     /// erorrrrrrrr
+
                     if (existingDay != null)
                     {
-                        DayLevel.AddOrUpdateDayLevel(existingClient.Days, existingDay);
-
+                        // Обновляем существующий DayLevel и получаем обновленный список
+                        existingClient.Days = DayLevel.AddOrUpdateDayLevel(existingClient.Days, newDay);
+                        foreach (var data in existingClient.Days[^1].Data)
+                        {
+                            Console.WriteLine(data.Path);
+                        }
                     }
                     else
                     {
-                        // Добавить новый DayLevel
+                        // Добавляем новый DayLevel
                         existingClient.Days.Add(newDay);
                     }
                 }
             }
             else
             {
-                // Если клиент не найден, добавляем его в список
+                // Добавляем нового клиента
                 clientLevels.Add(newClientLevel);
             }
+
+            // Возвращаем обновленный список клиентов
+            return clientLevels;
         }
-      
-        
+
+
+
+
         public static List<string> getPaths(ClientLevel client)
         {
             List<string> paths = new List<string>();
